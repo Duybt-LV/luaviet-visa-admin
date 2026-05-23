@@ -19,8 +19,8 @@
   --radius:10px;--shadow:0 2px 12px rgba(0,0,0,0.07);
   --font:'Be Vietnam Pro',sans-serif;
 }
-html{scroll-behavior:smooth}
-body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+html{scroll-behavior:smooth;height:100%}
+html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
 
 /* ══════════════════════════════════
    LOGIN SCREEN
@@ -82,8 +82,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14
   --radius:10px;--shadow:0 2px 12px rgba(0,0,0,0.07);
   --font:'Be Vietnam Pro',sans-serif;
 }
-html{scroll-behavior:smooth}
-body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+html{scroll-behavior:smooth;height:100%}
+html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
 
 /* ══════════════════════════════════
    LOGIN SCREEN
@@ -135,11 +135,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14
 #appScreen{display:none}
 
 /* LAYOUT */
-.layout{display:flex;min-height:100vh}
+.layout{display:flex;min-height:100vh;position:relative}
 .sidebar{
   width:220px;min-width:220px;background:var(--navy);
   display:flex;flex-direction:column;
-  position:sticky;top:0;height:100vh;z-index:50;
+  position:fixed;top:0;left:0;height:100vh;z-index:50;
   border-right:1px solid rgba(255,255,255,0.06);
 }
 .sidebar-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,0.07)}
@@ -171,20 +171,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14
 }
 .logout-btn:hover{background:rgba(217,30,39,0.2);color:#F87171;border-color:rgba(217,30,39,0.3)}
 
-.main{flex:1;overflow:auto}
+.main{flex:1;overflow:visible;min-height:0;margin-left:220px}
 
 /* TOPBAR */
 .topbar{
   background:var(--white);border-bottom:1px solid var(--border);
   padding:0 24px;height:54px;
   display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:40;
+  position:fixed;top:0;left:220px;right:0;z-index:40;
 }
+.topbar-spacer{height:54px;flex-shrink:0}
 .topbar-title{font-size:15px;font-weight:700;color:var(--navy)}
 .topbar-right{display:flex;align-items:center;gap:10px}
 
 /* PAGE */
-.page-content{padding:22px 24px;max-width:100%;overflow-x:hidden}
+.page-content{padding:14px 24px;max-width:100%;overflow-x:hidden}
 
 /* CARDS */
 .card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow)}
@@ -195,6 +196,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
 @media(max-width:860px){
   .sidebar{display:none}
+  .main{margin-left:0}
+  .topbar{left:0}
+  .filter-bar.is-stuck{left:0}
   .stats-row{grid-template-columns:repeat(2,1fr);gap:10px}
   .detail-panel{width:100vw;right:-100vw}
   .detail-panel.open{right:0}
@@ -202,7 +206,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14
 @media(max-width:700px){
   .table-wrap{display:none!important}
   .lead-card{display:block!important}
-  .page-content{padding:10px 10px}
+  .page-content{padding:10px 10px;padding-top:8px}
   .card-header{padding:12px 14px;flex-direction:column;align-items:flex-start;gap:8px}
   .card-header>div:last-child{width:100%}
   .card-header>div:last-child input{width:100%!important;max-width:100%}
@@ -225,17 +229,36 @@ body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14
 .stat-sub{font-size:11px;color:var(--muted);margin-top:3px}
 
 /* FILTER BAR */
-.filter-bar{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:100%;overflow:hidden}
+.filter-bar{
+  background:var(--white);border-radius:0;border:none;
+  border-bottom:1px solid var(--border);
+  padding:10px 24px;margin-bottom:14px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;overflow:hidden;
+  transition:box-shadow 0.2s;
+}
+.filter-bar.is-stuck{
+  position:fixed;top:54px;left:220px;right:0;z-index:38;
+  margin-bottom:0;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+.filter-bar-spacer{display:none;height:60px}
+.filter-bar.is-stuck~.filter-bar-spacer{display:block}
 
 /* MOBILE FILTER COMPACT */
 .filter-mobile{
   display:none;
   background:var(--white);
   border-bottom:1px solid var(--border);
-  position:sticky;top:54px;z-index:39;
-  box-shadow:0 2px 8px rgba(0,0,0,0.07);
   padding:6px 10px 8px;
+  transition:box-shadow 0.2s;
 }
+.filter-mobile.is-stuck{
+  position:fixed;top:54px;left:0;right:0;z-index:39;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+.filter-mobile-spacer{display:none;height:80px}
+.filter-mobile.is-stuck~.filter-mobile-spacer,
+.filter-mobile.is-stuck+.filter-mobile-spacer{display:block}
 /* Hàng 1: date + search */
 .fmr1{display:flex;align-items:center;gap:6px;margin-bottom:6px}
 .fmr1-date{
@@ -483,6 +506,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14
 
   <!-- MAIN -->
   <div class="main">
+    <div class="topbar-spacer"></div>
     <div class="topbar">
       <div class="topbar-title" id="topbar-title">📋 Chăm sóc Lead</div>
       <div class="topbar-right">
@@ -496,7 +520,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14
       <div id="tab-leads">
 
         <!-- Stats -->
-        <div class="stats-row">
+        <div class="stats-row" style="scroll-margin-top:120px">
           <div class="stat-card"><div class="stat-label">Tổng Lead</div><div class="stat-value" id="s-total">—</div><div class="stat-sub">Tất cả thời gian</div></div>
           <div class="stat-card"><div class="stat-label">Chưa chăm sóc</div><div class="stat-value" style="color:var(--red)" id="s-uncared">—</div><div class="stat-sub">Cần xử lý</div></div>
           <div class="stat-card"><div class="stat-label">Mức PASS</div><div class="stat-value" style="color:var(--blue)" id="s-pass">—</div><div class="stat-sub">Quyền hoàn 100%</div></div>
@@ -528,6 +552,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14
             <button class="fmb" id="mft-selfvisa" onclick="mTogF('selfvisa')">🟡 Tự đi</button>
           </div>
         </div>
+        <div class="filter-mobile-spacer"></div>
 
         <!-- Filters DESKTOP -->
         <div class="filter-bar">
@@ -551,8 +576,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--navy);font-size:14
           </div>
         </div>
 
+        <div class="filter-bar-spacer"></div>
         <!-- Table -->
-        <div class="card">
+        <div class="card" style="margin-top:14px">
           <div class="card-header">
             <div class="card-title">📋 Danh sách Lead <span style="font-size:12px;font-weight:400;color:var(--muted)" id="table-count"></span></div>
           </div>
@@ -711,6 +737,8 @@ async function loadLeads(force=false) {
     updateStats();
     applyFilters();
     initMobileFilter();
+    // Re-init sticky sau khi data render xong
+    setTimeout(() => { if(window._reinitSticky) window._reinitSticky(); }, 100);
     if (force) showToast("✓ Đã làm mới", "ok");
   } catch(e) {
     console.error("[loadLeads] ERROR:", e);
@@ -1456,6 +1484,96 @@ function showToast(msg, type) {
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.className="toast", 3000);
 }
+
+// ══════════════════════════════════════════════════════
+// STICKY FILTER - JS scroll listener (works everywhere)
+// ══════════════════════════════════════════════════════
+(function() {
+  let filterBar    = null;
+  let filterMobile = null;
+  let topbarH      = 54;
+  let ticking      = false;
+
+  function getFilterEl() {
+    const isMobile = window.innerWidth <= 700;
+    if (isMobile) {
+      return document.querySelector('.filter-mobile');
+    } else {
+      return document.querySelector('.filter-bar');
+    }
+  }
+
+  function getFilterOffset(el) {
+    if (!el) return 9999;
+    const rect = el.getBoundingClientRect();
+    // Vị trí tự nhiên của filter so với top của viewport khi không stuck
+    // = offsetTop của el so với document - scrollY
+    return el.offsetTop;
+  }
+
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const scrollY   = window.scrollY || window.pageYOffset;
+      const isMobile  = window.innerWidth <= 700;
+
+      // Desktop filter bar
+      const fb = document.querySelector('.filter-bar');
+      if (fb) {
+        // Lấy vị trí ban đầu của filter (trước khi stuck)
+        if (!fb._origTop) {
+          fb._origTop = fb.getBoundingClientRect().top + scrollY;
+        }
+        const shouldStick = scrollY + topbarH >= fb._origTop;
+        if (shouldStick && !fb.classList.contains('is-stuck')) {
+          fb.classList.add('is-stuck');
+          // Compensate height
+          const spacer = document.querySelector('.filter-bar-spacer');
+          if (spacer) spacer.style.height = fb.offsetHeight + 'px';
+        } else if (!shouldStick && fb.classList.contains('is-stuck')) {
+          fb.classList.remove('is-stuck');
+          const spacer = document.querySelector('.filter-bar-spacer');
+          if (spacer) spacer.style.height = '0';
+        }
+      }
+
+      // Mobile filter
+      const fm = document.querySelector('.filter-mobile');
+      if (fm && getComputedStyle(fm).display !== 'none') {
+        if (!fm._origTop) {
+          fm._origTop = fm.getBoundingClientRect().top + scrollY;
+        }
+        const shouldStickM = scrollY + topbarH >= fm._origTop;
+        if (shouldStickM && !fm.classList.contains('is-stuck')) {
+          fm.classList.add('is-stuck');
+          const spacer = document.querySelector('.filter-mobile-spacer');
+          if (spacer) spacer.style.height = fm.offsetHeight + 'px';
+        } else if (!shouldStickM && fm.classList.contains('is-stuck')) {
+          fm.classList.remove('is-stuck');
+          const spacer = document.querySelector('.filter-mobile-spacer');
+          if (spacer) spacer.style.height = '0';
+        }
+      }
+
+      ticking = false;
+    });
+  }
+
+  function initSticky() {
+    // Reset cached positions khi resize
+    const fb = document.querySelector('.filter-bar');
+    const fm = document.querySelector('.filter-mobile');
+    if (fb) { fb._origTop = null; fb.classList.remove('is-stuck'); }
+    if (fm) { fm._origTop = null; fm.classList.remove('is-stuck'); }
+    onScroll();
+  }
+
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', initSticky);
+  // Gọi lại sau khi data load xong
+  window._reinitSticky = initSticky;
+})();
 </script>
 </body>
 </html>
