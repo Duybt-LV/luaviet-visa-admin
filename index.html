@@ -576,17 +576,17 @@ html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-si
 /* ── FAB – Zalo quick action (mobile only) ── */
 .fab-zalo{
   position:fixed;right:16px;bottom:72px;z-index:150;
-  width:52px;height:52px;border-radius:50%;
+  width:56px;height:56px;border-radius:14px;
   background:#0068FF;border:none;cursor:pointer;
-  display:none;align-items:center;justify-content:center;
-  box-shadow:0 4px 16px rgba(0,104,255,0.4);
-  font-size:22px;color:#fff;font-weight:700;
-  font-family:var(--font);transition:transform 0.15s;
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  box-shadow:0 4px 16px rgba(0,104,255,0.45);
+  color:#fff;font-family:var(--font);transition:transform 0.15s,box-shadow 0.15s;
   text-decoration:none;
 }
+.fab-zalo:hover{box-shadow:0 6px 20px rgba(0,104,255,0.55)}
 .fab-zalo:active{transform:scale(0.93)}
 @media(max-width:860px){
-  .fab-zalo{display:flex}
+  /* chỉ hiện khi được updateFabZalo() bật */
 }
 
 /* ── TOPBAR refresh button mobile hide ── */
@@ -706,7 +706,14 @@ html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-si
         </div>
       </div>
       <div class="mob-drawer-footer">
-        <button class="mob-drawer-logout" onclick="doLogout()">⏻ &nbsp;Đăng xuất</button>
+        <button class="mob-drawer-logout" onclick="doLogout()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Đăng xuất
+        </button>
       </div>
     </div>
 
@@ -731,7 +738,13 @@ html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-si
     </nav>
 
     <!-- FAB Zalo (hiện khi đang xem 1 lịch hẹn có phone) -->
-    <a class="fab-zalo" id="fabZalo" href="#" target="_blank" title="Nhắn Zalo">Z</a>
+    <a class="fab-zalo" id="fabZalo" href="#" target="_blank" aria-label="Nhắn Zalo">
+      <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="white" fill-opacity="0.25"/>
+        <text x="24" y="33" text-anchor="middle" font-size="22" font-weight="900" font-family="Arial,sans-serif" fill="white">Z</text>
+      </svg>
+      <span style="font-size:9px;font-weight:700;letter-spacing:0.3px;margin-top:1px">ZALO</span>
+    </a>
 
     <div class="page-content">
 
@@ -2392,13 +2405,16 @@ function renderApptCards(appts) {
 function updateFabZalo(phone) {
   const fab = document.getElementById("fabZalo");
   if (!fab) return;
-  if (phone && window.innerWidth <= 860) {
+  // Chỉ hiện FAB Zalo khi: mobile + đang mở detail + có SĐT
+  if (phone && phone.trim() && window.innerWidth <= 860) {
     fab.href = "https://zalo.me/" + phone.replace(/\D/g,"");
     fab.style.display = "flex";
   } else {
     fab.style.display = "none";
   }
 }
+// Ẩn FAB khi load
+(function(){ var f=document.getElementById("fabZalo"); if(f) f.style.display="none"; })();
 
 // FAB Zalo sync - called after openApptDetail sets up the panel
 function syncFabAfterOpen(id) {
