@@ -429,8 +429,170 @@ html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-si
 .empty-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:5px}
 
 /* RESPONSIVE */
-@media(max-width:860px){.sidebar{display:none}.stats-row{grid-template-columns:1fr 1fr}.detail-panel{width:100vw}}
-@media(max-width:560px){.page-content{padding:14px}.stats-row{grid-template-columns:1fr}.topbar{padding:0 14px}}
+@media(max-width:860px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .topbar{left:0}
+  .filter-bar.is-stuck{left:0}
+  .stats-row{grid-template-columns:repeat(2,1fr);gap:10px}
+  .detail-panel{width:100vw;right:-100vw}
+  .detail-panel.open{right:0}
+}
+@media(max-width:560px){
+  .page-content{padding:10px 10px;padding-top:8px}
+  .stats-row{grid-template-columns:repeat(2,1fr)!important}
+  .topbar{padding:0 12px}
+  .topbar-title{font-size:13px}
+}
+
+/* ── HAMBURGER MENU BUTTON (mobile) ── */
+.ham-btn{
+  display:none;width:36px;height:36px;border-radius:8px;
+  background:transparent;border:1.5px solid rgba(255,255,255,0.2);
+  color:#fff;font-size:18px;cursor:pointer;
+  align-items:center;justify-content:center;flex-shrink:0;
+}
+@media(max-width:860px){
+  .ham-btn{display:flex}
+}
+
+/* ── MOBILE DRAWER ── */
+.mob-drawer{
+  position:fixed;top:0;left:-260px;width:260px;height:100vh;
+  background:var(--navy);z-index:300;
+  transition:left 0.28s cubic-bezier(0.4,0,0.2,1);
+  display:flex;flex-direction:column;overflow-y:auto;
+  box-shadow:4px 0 24px rgba(0,0,0,0.25);
+}
+.mob-drawer.open{left:0}
+.mob-drawer-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.45);
+  z-index:299;display:none;
+}
+.mob-drawer-overlay.show{display:block}
+.mob-drawer-header{
+  padding:20px 18px 14px;border-bottom:1px solid rgba(255,255,255,0.1);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.mob-drawer-logo{font-size:16px;font-weight:700;color:#fff}
+.mob-drawer-close{
+  width:28px;height:28px;border-radius:6px;
+  background:rgba(255,255,255,0.1);border:none;
+  color:#fff;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.mob-drawer-user{
+  padding:14px 18px 10px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+.mob-drawer-user-name{font-size:13.5px;font-weight:600;color:#fff}
+.mob-drawer-user-email{font-size:11.5px;color:rgba(255,255,255,0.45);margin-top:1px}
+.mob-drawer-nav{flex:1;padding:10px 10px}
+.mob-drawer-nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:8px;
+  color:rgba(255,255,255,0.65);font-size:13.5px;font-weight:500;
+  cursor:pointer;transition:all 0.15s;margin-bottom:3px;
+  position:relative;
+}
+.mob-drawer-nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+.mob-drawer-nav-item.active{background:rgba(255,255,255,0.12);color:#fff;font-weight:700}
+.mob-drawer-nav-icon{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+.mob-drawer-badge{
+  margin-left:auto;background:var(--red);color:#fff;
+  font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center;
+}
+.mob-drawer-footer{
+  padding:12px 18px;border-top:1px solid rgba(255,255,255,0.1);
+}
+.mob-drawer-logout{
+  display:flex;align-items:center;gap:8px;
+  color:rgba(255,255,255,0.5);font-size:12.5px;cursor:pointer;
+  background:none;border:none;font-family:var(--font);padding:0;
+}
+.mob-drawer-logout:hover{color:var(--red)}
+
+/* ── APPOINTMENT CARD (mobile, replaces table) ── */
+.appt-card{
+  background:var(--white);border-bottom:1px solid var(--border);
+  padding:13px 16px;cursor:pointer;transition:background 0.1s;
+  display:none; /* show only on mobile */
+}
+.appt-card:hover,.appt-card:active{background:#F8FAFC}
+.appt-card-row1{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px}
+.appt-card-name{font-size:14px;font-weight:700;color:var(--navy);line-height:1.3}
+.appt-card-meta{font-size:11.5px;color:var(--muted);margin-top:1px}
+.appt-card-row2{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.appt-card-row3{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.appt-card-date{
+  background:var(--bg);border-radius:6px;padding:4px 9px;
+  font-size:12px;font-weight:600;color:var(--slate);
+  display:inline-flex;align-items:center;gap:4px;
+}
+.appt-card-time{font-size:12px;color:var(--muted)}
+
+@media(max-width:700px){
+  /* Appointments: ẩn bảng, hiện cards */
+  #apptTableContainer .table-wrap{display:none!important}
+  .appt-card{display:block!important}
+  /* Ẩn desktop filter bar, hiện mobile filter */
+  #apptFilterBar{ display:none!important }
+  #apptFilterMobile{ display:block!important }
+}
+
+/* ── BOTTOM NAVIGATION BAR (mobile only) ── */
+.bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--white);border-top:1px solid var(--border);
+  z-index:100;height:56px;
+  box-shadow:0 -2px 12px rgba(0,0,0,0.08);
+}
+.bottom-nav-inner{
+  display:flex;height:100%;
+}
+.bottom-nav-item{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px;
+  cursor:pointer;transition:color 0.15s;
+  color:var(--muted);font-size:10px;font-weight:600;
+  border:none;background:none;font-family:var(--font);
+  position:relative;padding:0;
+}
+.bottom-nav-item.active{color:var(--red)}
+.bottom-nav-item.active .bni-icon{color:var(--red)}
+.bni-icon{font-size:20px;line-height:1}
+.bni-badge{
+  position:absolute;top:6px;right:calc(50% - 18px);
+  background:var(--red);color:#fff;font-size:9px;font-weight:700;
+  padding:1px 5px;border-radius:8px;min-width:16px;text-align:center;
+}
+@media(max-width:860px){
+  .bottom-nav{display:block}
+  .main{padding-bottom:56px}
+  .detail-actions{padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px))}
+}
+
+/* ── FAB – Zalo quick action (mobile only) ── */
+.fab-zalo{
+  position:fixed;right:16px;bottom:72px;z-index:150;
+  width:52px;height:52px;border-radius:50%;
+  background:#0068FF;border:none;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,104,255,0.4);
+  font-size:22px;color:#fff;font-weight:700;
+  font-family:var(--font);transition:transform 0.15s;
+  text-decoration:none;
+}
+.fab-zalo:active{transform:scale(0.93)}
+@media(max-width:860px){
+  .fab-zalo{display:flex}
+}
+
+/* ── TOPBAR refresh button mobile hide ── */
+@media(max-width:700px){
+  .topbar-refresh-desk{display:none}
+}
 @media print{.sidebar,.topbar,.filter-bar,.detail-actions,.login-box{display:none!important}.detail-panel{position:static;width:100%;box-shadow:none;border:none}}
 </style>
 </head>
@@ -512,11 +674,64 @@ html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-si
   <div class="main">
     <div class="topbar-spacer"></div>
     <div class="topbar">
+      <button class="ham-btn" onclick="openDrawer()" aria-label="Menu">☰</button>
       <div class="topbar-title" id="topbar-title">📋 Chăm sóc Lead</div>
       <div class="topbar-right">
-        <button class="btn btn-secondary btn-sm" onclick="loadLeads(true)">↻ Làm mới</button>
+        <button class="btn btn-secondary btn-sm topbar-refresh-desk" id="topbarRefreshBtn" onclick="topbarRefresh()">↻ Làm mới</button>
       </div>
     </div>
+
+    <!-- Mobile Drawer -->
+    <div class="mob-drawer-overlay" id="mobDrawerOverlay" onclick="closeDrawer()"></div>
+    <div class="mob-drawer" id="mobDrawer">
+      <div class="mob-drawer-header">
+        <div class="mob-drawer-logo">🔥 Lửa Việt Tours</div>
+        <button class="mob-drawer-close" onclick="closeDrawer()">✕</button>
+      </div>
+      <div class="mob-drawer-user">
+        <div class="mob-drawer-user-name" id="mDrawerName">—</div>
+        <div class="mob-drawer-user-email" id="mDrawerEmail">—</div>
+      </div>
+      <div class="mob-drawer-nav">
+        <div class="mob-drawer-nav-item active" id="mdnav-leads" onclick="closeDrawer();switchTab('leads')">
+          <span class="mob-drawer-nav-icon">📋</span>Danh sách Lead
+          <span class="mob-drawer-badge" id="md-badge-leads">0</span>
+        </div>
+        <div class="mob-drawer-nav-item" id="mdnav-lookup" onclick="closeDrawer();switchTab('lookup')">
+          <span class="mob-drawer-nav-icon">🔍</span>Tra cứu mã
+        </div>
+        <div class="mob-drawer-nav-item" id="mdnav-appointments" onclick="closeDrawer();switchTab('appointments')">
+          <span class="mob-drawer-nav-icon">📅</span>Lịch hẹn
+          <span class="mob-drawer-badge" id="md-badge-appt">0</span>
+        </div>
+      </div>
+      <div class="mob-drawer-footer">
+        <button class="mob-drawer-logout" onclick="doLogout()">⏻ &nbsp;Đăng xuất</button>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+      <div class="bottom-nav-inner">
+        <button class="bottom-nav-item active" id="bni-leads" onclick="switchTab('leads')">
+          <span class="bni-icon">📋</span>
+          <span>Lead</span>
+          <span class="bni-badge" id="bni-badge-leads" style="display:none">0</span>
+        </button>
+        <button class="bottom-nav-item" id="bni-lookup" onclick="switchTab('lookup')">
+          <span class="bni-icon">🔍</span>
+          <span>Tra cứu</span>
+        </button>
+        <button class="bottom-nav-item" id="bni-appointments" onclick="switchTab('appointments')">
+          <span class="bni-icon">📅</span>
+          <span>Lịch hẹn</span>
+          <span class="bni-badge" id="bni-badge-appt" style="display:none">0</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- FAB Zalo (hiện khi đang xem 1 lịch hẹn có phone) -->
+    <a class="fab-zalo" id="fabZalo" href="#" target="_blank" title="Nhắn Zalo">Z</a>
 
     <div class="page-content">
 
@@ -639,6 +854,29 @@ html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-si
         </div>
         <div class="filter-bar-spacer"></div>
 
+        <!-- MOBILE FILTER – Lịch hẹn -->
+        <div class="filter-mobile" id="apptFilterMobile">
+          <!-- Hàng 1: date range + search + reset -->
+          <div class="fmr1">
+            <div class="fmr1-date">
+              <input type="date" id="afm-from" onchange="syncApptMobileFilter()">
+              <span>→</span>
+              <input type="date" id="afm-to" onchange="syncApptMobileFilter()">
+            </div>
+            <input type="text" class="fmr1-search" placeholder="🔍 Tên, SĐT..." id="afm-search" oninput="syncApptMobileFilter()">
+            <button class="fmr1-reset" onclick="resetApptMobileFilters()" title="Đặt lại">↺</button>
+          </div>
+          <!-- Hàng 2: status pills -->
+          <div class="fmr2">
+            <button class="fmb on" id="afmb-new" onclick="togAFM('new')">🔵 Mới</button>
+            <button class="fmb on" id="afmb-contacted" onclick="togAFM('contacted')" style="--pill-on:var(--amber)">🟡 Đã liên hệ</button>
+            <div class="fmb-sep"></div>
+            <button class="fmb" id="afmb-done" onclick="togAFM('done')" style="--pill-on:var(--green)">✅ Xong</button>
+            <button class="fmb" id="afmb-cancelled" onclick="togAFM('cancelled')">❌ Huỷ</button>
+          </div>
+        </div>
+        <div class="filter-mobile-spacer" id="apptFilterMobileSpacer"></div>
+
         <div class="card" style="margin-top:14px">
           <div class="card-header">
             <div class="card-title">📅 Danh sách lịch hẹn tư vấn <span style="font-size:12px;font-weight:400;color:var(--muted)" id="appt-table-count"></span></div>
@@ -647,6 +885,7 @@ html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-si
           <div id="apptTableContainer">
             <div class="spinner-wrap"><div class="spinner"></div><br>Đang tải...</div>
           </div>
+          <div id="apptCardContainer"></div>
           <div style="padding:0 18px 14px"><div class="pagination" id="apptPagination"></div></div>
         </div>
       </div>
@@ -1188,6 +1427,7 @@ function openDetail(id) {
 function closeDetail() {
   document.getElementById("detailPanel").classList.remove("open");
   document.getElementById("overlay").classList.remove("show");
+  updateFabZalo("");
 }
 
 // ══════════════════════════════════════════════════════
@@ -1414,11 +1654,25 @@ function buildGroupBars(answers) {
 function switchTab(t) {
   ["leads","lookup","appointments"].forEach(x => {
     document.getElementById("tab-"+x).style.display = x===t?"block":"none";
-    document.getElementById("nav-"+x).classList.toggle("active", x===t);
+    const sn = document.getElementById("nav-"+x);
+    if (sn) sn.classList.toggle("active", x===t);
   });
   if (t === "appointments" && allAppointments.length === 0) loadAppointments();
   document.getElementById("topbar-title").textContent =
     t==="leads"?"📋 Chăm sóc Lead":t==="appointments"?"📅 Lịch hẹn tư vấn":"🔍 Tra cứu mã";
+  // Sync bottom nav
+  ["leads","lookup","appointments"].forEach(x => {
+    const bn = document.getElementById("bni-"+x);
+    if (bn) bn.classList.toggle("active", x===t);
+  });
+  // Sync drawer nav
+  ["leads","lookup","appointments"].forEach(x => {
+    const dn = document.getElementById("mdnav-"+x);
+    if (dn) dn.classList.toggle("active", x===t);
+  });
+  // Update refresh button action
+  const rbtn = document.getElementById("topbarRefreshBtn");
+  if (rbtn) rbtn.onclick = t==="appointments"?()=>loadAppointments(true):t==="leads"?()=>loadLeads(true):null;
 }
 
 // ══════════════════════════════════════════════════════
@@ -1534,6 +1788,90 @@ function showToast(msg, type) {
 }
 
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// APPOINTMENT MOBILE FILTER
+// ══════════════════════════════════════════════════════
+var apptMobileFState = { new:true, contacted:true, done:false, cancelled:false };
+
+function togAFM(k) {
+  apptMobileFState[k] = !apptMobileFState[k];
+  var btn = document.getElementById("afmb-"+k);
+  if (btn) {
+    btn.classList.toggle("on", apptMobileFState[k]);
+    // Sync colour tones
+    if (k==="contacted") btn.classList.toggle("on-amber", apptMobileFState[k]);
+    if (k==="done")      btn.classList.toggle("on-green",  apptMobileFState[k]);
+  }
+  // Sync to desktop filter state
+  apptFState[k] = apptMobileFState[k];
+  var dBtn = document.getElementById("aft-"+k);
+  if (dBtn) dBtn.classList.toggle("active", apptMobileFState[k]);
+  apptPage = 1;
+  applyApptFilters();
+}
+
+function syncApptMobileFilter() {
+  var from   = document.getElementById("afm-from");
+  var to     = document.getElementById("afm-to");
+  var search = document.getElementById("afm-search");
+  // Push to desktop inputs
+  if (from)   { var df = document.getElementById("af-from");   if (df) df.value = from.value; }
+  if (to)     { var dt2 = document.getElementById("af-to");    if (dt2) dt2.value = to.value; }
+  if (search) { var ds = document.getElementById("af-search"); if (ds) ds.value = search.value; }
+  apptPage = 1;
+  applyApptFilters();
+}
+
+function resetApptMobileFilters() {
+  apptMobileFState = { new:true, contacted:true, done:false, cancelled:false };
+  ["new","contacted","done","cancelled"].forEach(function(k) {
+    var btn = document.getElementById("afmb-"+k);
+    if (!btn) return;
+    var isOn = apptMobileFState[k];
+    btn.classList.toggle("on", isOn);
+    btn.classList.toggle("on-amber", k==="contacted" && isOn);
+    btn.classList.toggle("on-green",  k==="done"      && isOn);
+  });
+  var t   = new Date();
+  var f30 = new Date(t); f30.setDate(t.getDate()-30);
+  var fmt = function(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+  var mff = document.getElementById("afm-from");
+  var mft = document.getElementById("afm-to");
+  var mfs = document.getElementById("afm-search");
+  if (mff) mff.value = fmt(f30);
+  if (mft) mft.value = fmt(t);
+  if (mfs) mfs.value = "";
+  syncApptMobileFilter();
+  // Also call desktop reset to sync state
+  resetApptFilters();
+}
+
+// syncApptMobilePills – called after applyApptFilters runs
+function syncApptMobilePills() {
+  var df  = document.getElementById("af-from");
+  var dt2 = document.getElementById("af-to");
+  var ds  = document.getElementById("af-search");
+  var mff = document.getElementById("afm-from");
+  var mft = document.getElementById("afm-to");
+  var mfs = document.getElementById("afm-search");
+  if (df && mff && document.activeElement !== mff) mff.value = df.value;
+  if (dt2 && mft && document.activeElement !== mft) mft.value = dt2.value;
+  if (ds && mfs && document.activeElement !== mfs) mfs.value = ds.value;
+  Object.keys(apptFState).forEach(function(k) {
+    var btn = document.getElementById("afmb-"+k);
+    if (!btn) return;
+    btn.classList.toggle("on", !!apptFState[k]);
+    btn.classList.toggle("on-amber", k==="contacted" && !!apptFState[k]);
+    btn.classList.toggle("on-green",  k==="done"      && !!apptFState[k]);
+    apptMobileFState[k] = !!apptFState[k];
+  });
+}
+
+// loadAppointments unchanged
+
+// Mobile filter date sync happens via syncApptMobilePills
+
+// ══════════════════════════════════════════════════════
 // STICKY FILTER - JS scroll listener (works everywhere)
 // ══════════════════════════════════════════════════════
 (function() {
@@ -1586,23 +1924,27 @@ function showToast(msg, type) {
         }
       }
 
-      // Mobile filter
-      const fm = document.querySelector('.filter-mobile');
-      if (fm && getComputedStyle(fm).display !== 'none') {
+      // Mobile filter (leads OR appointments – whichever is visible)
+      const allMobileFilters = document.querySelectorAll('.filter-mobile');
+      allMobileFilters.forEach(function(fm) {
+        if (!fm || getComputedStyle(fm).display === 'none') return;
         if (!fm._origTop) {
           fm._origTop = fm.getBoundingClientRect().top + scrollY;
         }
         const shouldStickM = scrollY + topbarH >= fm._origTop;
         if (shouldStickM && !fm.classList.contains('is-stuck')) {
           fm.classList.add('is-stuck');
-          const spacer = document.querySelector('.filter-mobile-spacer');
-          if (spacer) spacer.style.height = fm.offsetHeight + 'px';
+          // Find matching spacer
+          var spacer = fm.nextElementSibling;
+          if (spacer && spacer.classList.contains('filter-mobile-spacer'))
+            spacer.style.height = fm.offsetHeight + 'px';
         } else if (!shouldStickM && fm.classList.contains('is-stuck')) {
           fm.classList.remove('is-stuck');
-          const spacer = document.querySelector('.filter-mobile-spacer');
-          if (spacer) spacer.style.height = '0';
+          var spacer = fm.nextElementSibling;
+          if (spacer && spacer.classList.contains('filter-mobile-spacer'))
+            spacer.style.height = '0';
         }
-      }
+      });
 
       ticking = false;
     });
@@ -1610,10 +1952,11 @@ function showToast(msg, type) {
 
   function initSticky() {
     // Reset cached positions khi resize
-    const fb = document.querySelector('.filter-bar');
-    const fm = document.querySelector('.filter-mobile');
+    const fb  = document.querySelector('.filter-bar');
+    document.querySelectorAll('.filter-mobile').forEach(function(fm) {
+      fm._origTop = null; fm.classList.remove('is-stuck');
+    });
     if (fb) { fb._origTop = null; fb.classList.remove('is-stuck'); }
-    if (fm) { fm._origTop = null; fm.classList.remove('is-stuck'); }
     onScroll();
   }
 
@@ -1666,7 +2009,25 @@ function updateApptStats() {
   document.getElementById("as-new").textContent       = newC;
   document.getElementById("as-contacted").textContent = contC;
   document.getElementById("as-done").textContent      = doneC;
-  document.getElementById("badge-new-appt").textContent = newC;
+  // Sidebar badge
+  const sba = document.getElementById("badge-new-appt");
+  if (sba) sba.textContent = newC;
+  // Bottom nav + drawer badges
+  const bniA = document.getElementById("bni-badge-appt");
+  const mdA  = document.getElementById("md-badge-appt");
+  if (bniA) { bniA.textContent = newC; bniA.style.display = newC > 0 ? "" : "none"; }
+  if (mdA)  mdA.textContent = newC;
+
+  // Sync dates to mobile filter on first load
+  (function() {
+    var mff = document.getElementById("afm-from");
+    var mft = document.getElementById("afm-to");
+    var df  = document.getElementById("af-from");
+    var dt2 = document.getElementById("af-to");
+    if (mff && !mff.value && df  && df.value)  mff.value = df.value;
+    if (mft && !mft.value && dt2 && dt2.value) mft.value = dt2.value;
+  })();
+  if (window._reinitSticky) window._reinitSticky();
 }
 
 function norm2(v) { return String(v||"").trim().toUpperCase(); }
@@ -1716,6 +2077,8 @@ function applyApptFilters() {
   document.getElementById("appt-table-count").textContent = `(${filtered.length})`;
   renderApptTable(filtered);
   renderApptPagination(filtered.length);
+
+  if (typeof syncApptMobilePills === "function") syncApptMobilePills();
 }
 
 function renderApptTable(appts) {
@@ -1723,6 +2086,8 @@ function renderApptTable(appts) {
   if (!slice.length) {
     document.getElementById("apptTableContainer").innerHTML =
       '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Không có lịch hẹn nào</div></div>';
+    const cc = document.getElementById("apptCardContainer");
+    if (cc) cc.innerHTML = "";
     return;
   }
   const rows = slice.map(a => {
@@ -1758,6 +2123,8 @@ function renderApptTable(appts) {
         <tbody>${rows.join("")}</tbody>
       </table>
     </div>`;
+  // Mobile cards
+  renderApptCards(appts);
 }
 
 function renderApptPagination(total) {
@@ -1891,6 +2258,7 @@ function openApptDetail(id) {
 
   document.getElementById("detailPanel").classList.add("open");
   document.getElementById("overlay").classList.add("show");
+  if (typeof syncFabAfterOpen === "function") syncFabAfterOpen(id);
 }
 
 async function changeApptStatus(id, newStatus) {
@@ -1924,6 +2292,113 @@ async function changeApptStatus(id, newStatus) {
   const afTo   = document.getElementById("af-to");
   if (afFrom) afFrom.value = fmt3(f);
   if (afTo)   afTo.value   = fmt3(t);
+})();
+
+
+// ═══════════════════════════════════════════════════════════
+// MOBILE: Drawer + Bottom Nav + Cards + FAB Zalo
+// ═══════════════════════════════════════════════════════════
+
+function openDrawer() {
+  document.getElementById("mobDrawer").classList.add("open");
+  document.getElementById("mobDrawerOverlay").classList.add("show");
+  document.body.style.overflow = "hidden";
+  // Sync user info
+  if (currentUser) {
+    const n = document.getElementById("mDrawerName");
+    const e = document.getElementById("mDrawerEmail");
+    if (n) n.textContent = currentUser.name || "—";
+    if (e) e.textContent = currentUser.email || "—";
+  }
+}
+function closeDrawer() {
+  document.getElementById("mobDrawer").classList.remove("open");
+  document.getElementById("mobDrawerOverlay").classList.remove("show");
+  document.body.style.overflow = "";
+}
+
+function topbarRefresh() {
+  // Refresh current tab
+  const activeTab = ["leads","lookup","appointments"].find(x =>
+    document.getElementById("tab-"+x).style.display !== "none"
+  );
+  if (activeTab === "leads") loadLeads(true);
+  else if (activeTab === "appointments") loadAppointments(true);
+}
+
+// ── Appointment Cards (mobile) ──
+function renderApptCards(appts) {
+  const container = document.getElementById("apptCardContainer");
+  if (!container) return;
+  const slice = appts.slice((apptPage-1)*APPT_PS, apptPage*APPT_PS);
+  if (!slice.length) { container.innerHTML = ""; return; }
+
+  container.innerHTML = slice.map(function(a) {
+    const d        = excelDate(a.submitted_at);
+    const dt       = d ? d.toLocaleDateString("vi-VN",{day:"2-digit",month:"2-digit",year:"numeric"}) : "—";
+    const st       = norm2(a.status);
+    const sl       = STATUS_LABELS[st] || {label:st, cls:""};
+    const ph       = a.phone || "";
+    const zaloHref = "https://zalo.me/" + ph.replace(/\D/g,"");
+    const prefDate = a.preferred_date
+      ? new Date(a.preferred_date).toLocaleDateString("vi-VN",{weekday:"short",day:"2-digit",month:"2-digit"})
+      : "—";
+    const stColor  = st==="NEW"?"var(--blue)":st==="CONTACTED"?"var(--amber)":st==="DONE"?"var(--green)":"var(--muted)";
+    const stBg     = st==="NEW"?"var(--blue-lt)":st==="CONTACTED"?"var(--amber-bg)":st==="DONE"?"var(--green-bg)":"var(--bg)";
+
+    return '<div class="appt-card" onclick="openApptDetail(\'' + a.appointment_id + '\')">'
+      + '<div class="appt-card-row1">'
+        + '<div>'
+          + '<div class="appt-card-name">' + (a.full_name||"—") + '</div>'
+          + '<div class="appt-card-meta">' + (a.visa_type||"") + ' · ' + dt + '</div>'
+        + '</div>'
+        + '<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;white-space:nowrap;background:' + stBg + ';color:' + stColor + '">' + sl.label + '</span>'
+      + '</div>'
+      + '<div class="appt-card-row2">'
+        + '<span class="appt-card-date">📅 ' + prefDate + '</span>'
+        + '<span class="appt-card-time">⏰ ' + (a.call_time||"—") + '</span>'
+      + '</div>'
+      + '<div class="appt-card-row3" onclick="event.stopPropagation()">'
+        + (ph
+          ? '<a href="tel:' + ph + '" class="phone-link" style="font-size:13px">📞 ' + ph + '</a>'
+          + '<a href="' + zaloHref + '" target="_blank" class="zalo-btn" style="font-size:12px;padding:4px 10px">Z Zalo</a>'
+          : '<span style="font-size:12px;color:var(--muted)">Không có SĐT</span>')
+      + '</div>'
+    + '</div>';
+  }).join("");
+}
+
+// renderApptCards is called directly inside renderApptTable below
+
+// ── FAB Zalo – hiện khi detail panel mở và có phone ──
+function updateFabZalo(phone) {
+  const fab = document.getElementById("fabZalo");
+  if (!fab) return;
+  if (phone && window.innerWidth <= 860) {
+    fab.href = "https://zalo.me/" + phone.replace(/\D/g,"");
+    fab.style.display = "flex";
+  } else {
+    fab.style.display = "none";
+  }
+}
+
+// FAB Zalo sync - called after openApptDetail sets up the panel
+function syncFabAfterOpen(id) {
+  const a = allAppointments.find(x => x.appointment_id === id);
+  if (a) updateFabZalo(a.phone || "");
+}
+
+// Drawer user sync happens in openDrawer()
+
+// Swipe to close drawer
+(function() {
+  var startX = 0;
+  document.addEventListener("touchstart", function(e) { startX = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener("touchend", function(e) {
+    var dx = e.changedTouches[0].clientX - startX;
+    var drawer = document.getElementById("mobDrawer");
+    if (drawer && drawer.classList.contains("open") && dx < -60) closeDrawer();
+  }, {passive:true});
 })();
 
 </script>
