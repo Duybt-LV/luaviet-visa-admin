@@ -496,6 +496,10 @@ html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-si
     <button class="nav-item" id="nav-lookup" onclick="switchTab('lookup')">
       <span class="nav-icon">🔍</span>Tra cứu mã
     </button>
+    <button class="nav-item" id="nav-appointments" onclick="switchTab('appointments')">
+      <span class="nav-icon">📅</span>Lịch hẹn
+      <span class="nav-badge" id="badge-new-appt" style="background:#0077B6">0</span>
+    </button>
 
     <div class="sidebar-footer">
       <div class="sidebar-user-name" id="sb-name">—</div>
@@ -602,6 +606,48 @@ html,body{font-family:var(--font);background:var(--bg);color:var(--navy);font-si
             <div style="font-size:12px;color:var(--muted)">Định dạng: <code style="background:var(--bg);padding:1px 5px;border-radius:3px">LV-XX-YYYYMMDD-XXXX</code></div>
             <div id="lookupResult" style="margin-top:18px"></div>
           </div>
+        </div>
+      </div>
+
+
+      <!-- TAB APPOINTMENTS -->
+      <div id="tab-appointments" style="display:none">
+
+        <!-- Stats row for appointments -->
+        <div class="stats-row" style="scroll-margin-top:120px">
+          <div class="stat-card"><div class="stat-label">Tổng lịch hẹn</div><div class="stat-value" id="as-total">—</div><div class="stat-sub">Tất cả thời gian</div></div>
+          <div class="stat-card"><div class="stat-label">Chờ xử lý (NEW)</div><div class="stat-value" style="color:var(--blue)" id="as-new">—</div><div class="stat-sub">Cần liên hệ ngay</div></div>
+          <div class="stat-card"><div class="stat-label">Đã liên hệ</div><div class="stat-value" style="color:var(--amber)" id="as-contacted">—</div><div class="stat-sub">Đang theo dõi</div></div>
+          <div class="stat-card"><div class="stat-label">Hoàn thành</div><div class="stat-value" style="color:var(--green)" id="as-done">—</div><div class="stat-sub">Đã tư vấn xong</div></div>
+        </div>
+
+        <!-- Filter bar appointments -->
+        <div class="filter-bar" id="apptFilterBar">
+          <div class="filter-label">Từ</div>
+          <input type="date" class="filter-input" id="af-from" onchange="applyApptFilters()">
+          <div class="filter-label">Đến</div>
+          <input type="date" class="filter-input" id="af-to" onchange="applyApptFilters()">
+          <div class="filter-divider"></div>
+          <button class="filter-toggle active" id="aft-new" onclick="togAF('new')">🔵 NEW</button>
+          <button class="filter-toggle active" id="aft-contacted" onclick="togAF('contacted')" style="color:var(--amber)">🟡 Đã liên hệ</button>
+          <button class="filter-toggle" id="aft-done" onclick="togAF('done')" style="color:var(--green)">✅ Hoàn thành</button>
+          <button class="filter-toggle" id="aft-cancelled" onclick="togAF('cancelled')" style="color:var(--muted)">❌ Huỷ</button>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <input type="text" class="filter-input" placeholder="🔍 Tìm tên, SĐT, email..." style="width:210px" id="af-search" oninput="applyApptFilters()">
+            <button class="btn btn-secondary btn-sm" onclick="resetApptFilters()">Đặt lại</button>
+          </div>
+        </div>
+        <div class="filter-bar-spacer"></div>
+
+        <div class="card" style="margin-top:14px">
+          <div class="card-header">
+            <div class="card-title">📅 Danh sách lịch hẹn tư vấn <span style="font-size:12px;font-weight:400;color:var(--muted)" id="appt-table-count"></span></div>
+            <button class="btn btn-secondary btn-sm" onclick="loadAppointments(true)">↻ Làm mới</button>
+          </div>
+          <div id="apptTableContainer">
+            <div class="spinner-wrap"><div class="spinner"></div><br>Đang tải...</div>
+          </div>
+          <div style="padding:0 18px 14px"><div class="pagination" id="apptPagination"></div></div>
         </div>
       </div>
 
@@ -1366,11 +1412,13 @@ function buildGroupBars(answers) {
 // TAB SWITCH
 // ══════════════════════════════════════════════════════
 function switchTab(t) {
-  ["leads","lookup"].forEach(x => {
+  ["leads","lookup","appointments"].forEach(x => {
     document.getElementById("tab-"+x).style.display = x===t?"block":"none";
     document.getElementById("nav-"+x).classList.toggle("active", x===t);
   });
-  document.getElementById("topbar-title").textContent = t==="leads"?"📋 Chăm sóc Lead":"🔍 Tra cứu mã";
+  if (t === "appointments" && allAppointments.length === 0) loadAppointments();
+  document.getElementById("topbar-title").textContent =
+    t==="leads"?"📋 Chăm sóc Lead":t==="appointments"?"📅 Lịch hẹn tư vấn":"🔍 Tra cứu mã";
 }
 
 // ══════════════════════════════════════════════════════
@@ -1574,6 +1622,310 @@ function showToast(msg, type) {
   // Gọi lại sau khi data load xong
   window._reinitSticky = initSticky;
 })();
+
+// ══════════════════════════════════════════════════════
+// APPOINTMENTS ADMIN
+// ══════════════════════════════════════════════════════
+let allAppointments = [];
+let apptFState = { new: true, contacted: true, done: false, cancelled: false };
+let apptPage = 1;
+const APPT_PS = 20;
+const STATUS_LABELS = {
+  NEW: { label:"🔵 Mới", cls:"badge-new" },
+  CONTACTED: { label:"🟡 Đã liên hệ", cls:"badge-medium" },
+  DONE: { label:"✅ Hoàn thành", cls:"badge-pass" },
+  CANCELLED: { label:"❌ Đã huỷ", cls:"badge-low" }
+};
+const VISA_FLAGS = {
+  "Đài Loan":"🇹🇼","Trung Quốc":"🇨🇳","Hàn Quốc":"🇰🇷","Nhật Bản":"🇯🇵",
+  "Úc":"🇦🇺","Châu Âu":"🇪🇺","Anh":"🇬🇧","Mỹ":"🇺🇸","Canada":"🇨🇦"
+};
+
+async function loadAppointments(force=false) {
+  document.getElementById("apptTableContainer").innerHTML =
+    '<div class="spinner-wrap"><div class="spinner"></div><br>Đang tải lịch hẹn...</div>';
+  try {
+    const d = await apiFetch("getAppointments");
+    if (!d.success) throw new Error(d.error);
+    allAppointments = d.appointments || [];
+    updateApptStats();
+    applyApptFilters();
+    if (force) showToast("✓ Đã làm mới", "ok");
+  } catch(e) {
+    if (e.message !== "Unauthorized")
+      document.getElementById("apptTableContainer").innerHTML =
+        `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Lỗi tải dữ liệu</div><div style="font-size:12px;color:var(--red)">${e.message}</div></div>`;
+  }
+}
+
+function updateApptStats() {
+  const newC   = allAppointments.filter(a => norm2(a.status) === "NEW").length;
+  const contC  = allAppointments.filter(a => norm2(a.status) === "CONTACTED").length;
+  const doneC  = allAppointments.filter(a => norm2(a.status) === "DONE").length;
+  document.getElementById("as-total").textContent     = allAppointments.length;
+  document.getElementById("as-new").textContent       = newC;
+  document.getElementById("as-contacted").textContent = contC;
+  document.getElementById("as-done").textContent      = doneC;
+  document.getElementById("badge-new-appt").textContent = newC;
+}
+
+function norm2(v) { return String(v||"").trim().toUpperCase(); }
+
+function togAF(k) {
+  apptFState[k] = !apptFState[k];
+  document.getElementById("aft-"+k).classList.toggle("active");
+  apptPage = 1; applyApptFilters();
+}
+
+function resetApptFilters() {
+  apptFState = { new:true, contacted:true, done:false, cancelled:false };
+  ["new","contacted"].forEach(k => document.getElementById("aft-"+k).classList.add("active"));
+  ["done","cancelled"].forEach(k => document.getElementById("aft-"+k).classList.remove("active"));
+  document.getElementById("af-search").value = "";
+  const t = new Date(), f = new Date(t); f.setDate(t.getDate()-30);
+  const fmt2 = d => { const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${day}`; };
+  document.getElementById("af-from").value = fmt2(f);
+  document.getElementById("af-to").value   = fmt2(t);
+  apptPage = 1; applyApptFilters();
+}
+
+function applyApptFilters() {
+  const from  = document.getElementById("af-from").value;
+  const to    = document.getElementById("af-to").value;
+  const srch  = document.getElementById("af-search").value.trim().toLowerCase();
+  let filtered = allAppointments.filter(a => {
+    const st = norm2(a.status);
+    if (!apptFState.new       && st==="NEW")       return false;
+    if (!apptFState.contacted && st==="CONTACTED")  return false;
+    if (!apptFState.done      && st==="DONE")       return false;
+    if (!apptFState.cancelled && st==="CANCELLED")  return false;
+    if (from || to) {
+      const d = excelDate(a.submitted_at);
+      if (d) {
+        const iso = localDateStr(d);
+        if (from && iso < from) return false;
+        if (to   && iso > to)   return false;
+      }
+    }
+    if (srch) {
+      const hay = [a.full_name, a.email, a.phone, a.visa_type, a.appointment_id].join(" ").toLowerCase();
+      if (!hay.includes(srch)) return false;
+    }
+    return true;
+  });
+  document.getElementById("appt-table-count").textContent = `(${filtered.length})`;
+  renderApptTable(filtered);
+  renderApptPagination(filtered.length);
+}
+
+function renderApptTable(appts) {
+  const slice = appts.slice((apptPage-1)*APPT_PS, apptPage*APPT_PS);
+  if (!slice.length) {
+    document.getElementById("apptTableContainer").innerHTML =
+      '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Không có lịch hẹn nào</div></div>';
+    return;
+  }
+  const rows = slice.map(a => {
+    const d   = excelDate(a.submitted_at);
+    const dt  = d ? d.toLocaleDateString("vi-VN",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"Asia/Ho_Chi_Minh"}) : "—";
+    const st  = norm2(a.status);
+    const sl  = STATUS_LABELS[st] || {label:st, cls:""};
+    const ph  = a.phone||"";
+    const zalo = `https://zalo.me/${ph.replace(/\D/g,"")}`;
+    const prefDate = a.preferred_date ? new Date(a.preferred_date).toLocaleDateString("vi-VN",{day:"2-digit",month:"2-digit",year:"numeric"}) : "—";
+    const linkedId = a.linked_submission_id ? `<div style="font-size:10.5px;margin-top:2px"><a href="#" onclick="event.preventDefault();loadLeads().then(()=>{switchTab('leads');setTimeout(()=>openDetail('${a.linked_submission_id}'),400)})" style="color:var(--blue)">🔗 ${a.linked_submission_id}</a></div>` : "";
+    const flag = Object.keys(VISA_FLAGS).find(k => (a.visa_type||"").includes(k));
+    return `<tr style="cursor:pointer" onclick="openApptDetail('${a.appointment_id}')">
+      <td style="width:90px"><div style="font-size:12px;color:var(--muted)">${dt}</div></td>
+      <td><div style="font-weight:600">${a.full_name||"—"}</div><div style="font-size:11px;color:var(--muted)">${a.email||""}</div>${linkedId}</td>
+      <td style="white-space:nowrap">
+        ${ph?`<a href="tel:${ph}" class="phone-link" onclick="event.stopPropagation()">📞 ${ph}</a>
+        <a href="${zalo}" target="_blank" class="zalo-btn" onclick="event.stopPropagation()">Z Zalo</a>`:"—"}
+      </td>
+      <td><span style="font-size:13px">${flag?VISA_FLAGS[flag]:""}</span> ${a.visa_type||"—"}</td>
+      <td><div style="font-size:12.5px;font-weight:600">${prefDate}</div><div style="font-size:11.5px;color:var(--muted)">${a.call_time||""}</div></td>
+      <td><span class="badge ${sl.cls==='badge-new'?'':sl.cls}" style="${sl.cls==='badge-new'?'background:var(--blue-lt);color:var(--blue)':''}">${sl.label}</span></td>
+    </tr>`;
+  });
+
+  document.getElementById("apptTableContainer").innerHTML = `
+    <div class="table-wrap">
+      <table class="leads-table">
+        <thead><tr>
+          <th>Ngày đặt</th><th>Khách hàng</th><th>Điện thoại</th>
+          <th>Loại Visa</th><th>Lịch hẹn</th><th>Trạng thái</th>
+        </tr></thead>
+        <tbody>${rows.join("")}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderApptPagination(total) {
+  const pages = Math.ceil(total/APPT_PS);
+  const el = document.getElementById("apptPagination");
+  if (pages<=1) { el.innerHTML=""; return; }
+  let h = `<span class="page-info">Trang ${apptPage}/${pages}</span>
+    <button class="page-btn" onclick="goApptPage(${apptPage-1})" ${apptPage===1?"disabled":""}>‹</button>`;
+  for (let i=1;i<=pages;i++) {
+    if (pages>7 && Math.abs(i-apptPage)>1 && i!==1 && i!==pages) {
+      if (i===2||i===pages-1) h+=`<span class="page-info">…</span>`;
+      continue;
+    }
+    h += `<button class="page-btn ${i===apptPage?"active":""}" onclick="goApptPage(${i})">${i}</button>`;
+  }
+  h += `<button class="page-btn" onclick="goApptPage(${apptPage+1})" ${apptPage===pages?"disabled":""}>›</button>`;
+  el.innerHTML = h;
+}
+function goApptPage(p) { apptPage=p; applyApptFilters(); }
+
+// ── APPOINTMENT DETAIL (reuse detail panel) ──
+function buildLinkedSubmissions(email, primaryLinkedId) {
+  if (!email) return "";
+  // Lọc allLeads: cùng email, trong 30 ngày gần nhất
+  var now30 = Date.now() - 30 * 86400000;
+  var matches = allLeads.filter(function(l) {
+    var lEmail = String(l.email || "").trim().toLowerCase();
+    if (lEmail !== email.trim().toLowerCase()) return false;
+    var d = excelDate(l.submitted_at);
+    return d && d.getTime() >= now30;
+  });
+
+  if (!matches.length) return "";
+
+  var LEVEL_STYLE = {
+    PASS:   { bg:"var(--green-bg)", color:"var(--green)",   label:"✅ Có thể nộp" },
+    MEDIUM: { bg:"#FFFBEB",         color:"var(--amber)",   label:"⚠️ Cần chuẩn bị" },
+    LOW:    { bg:"#FEF2F2",         color:"var(--red)",     label:"❌ Rủi ro cao" },
+  };
+
+  var rows = matches.map(function(l) {
+    var lv   = (l.result_level || "LOW").toUpperCase();
+    var st   = LEVEL_STYLE[lv] || LEVEL_STYLE.LOW;
+    var dt   = excelDate(l.submitted_at);
+    var dtStr = dt ? dt.toLocaleDateString("vi-VN", {day:"2-digit",month:"2-digit",year:"numeric"}) : "—";
+    var pct  = parseFloat(l.soft_pct || 0).toFixed(1);
+    var cn   = (COUNTRY_NAMES && COUNTRY_NAMES[l.country_code]) || l.country_code || "—";
+    var sid  = l.submission_id || "";
+    var isPrimary = sid === primaryLinkedId;
+
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1.5px solid ' + (isPrimary ? 'var(--blue)' : 'var(--border)') + ';background:' + (isPrimary ? 'var(--blue-lt)' : 'var(--white)') + ';margin-bottom:8px">'
+      + '<div style="flex:1;min-width:0">'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">'
+          + '<span style="font-size:12px;font-weight:700;font-family:monospace;letter-spacing:1px;color:var(--navy)">' + sid + '</span>'
+          + (isPrimary ? '<span style="font-size:10px;background:var(--blue);color:#fff;padding:1px 6px;border-radius:10px">Đã liên kết</span>' : '')
+          + '<span style="font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;background:' + st.bg + ';color:' + st.color + '">' + st.label + '</span>'
+        + '</div>'
+        + '<div style="font-size:12px;color:var(--muted)">'
+          + cn + ' · ' + (l.visa_type || "—") + ' · <strong style="color:var(--navy)">' + pct + '%</strong> · ' + dtStr
+        + '</div>'
+      + '</div>'
+      + '<button class="btn btn-secondary btn-sm" style="flex-shrink:0;font-size:11.5px;padding:5px 10px" onclick="closeDetail();switchTab(\'leads\');setTimeout(function(){ openDetail(\'' + sid + '\'); }, 400)">Xem hồ sơ</button>'
+    + '</div>';
+  }).join("");
+
+  return '<div class="dp-section">'
+    + '<div class="dp-section-title">Bài đánh giá trong 30 ngày qua&nbsp;'
+    + '<span style="font-size:12px;font-weight:400;color:var(--muted)">(' + matches.length + ' bài · cùng email)</span>'
+    + '</div>'
+    + rows
+    + '</div>';
+}
+
+function openApptDetail(id) {
+  const a = allAppointments.find(x => x.appointment_id === id);
+  if (!a) return;
+  const dt = excelDate(a.submitted_at);
+  const dtStr = dt ? dt.toLocaleString("vi-VN") : "—";
+  const prefDate = a.preferred_date ? new Date(a.preferred_date).toLocaleDateString("vi-VN",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"}) : "—";
+  const ph = a.phone||"";
+  const st = norm2(a.status);
+
+  document.getElementById("dp-name").textContent = a.full_name||"—";
+  document.getElementById("dp-sub").textContent  = `${a.visa_type||""} · ${id}`;
+
+  document.getElementById("detailBody").innerHTML = `
+    <!-- Status -->
+    <div class="dp-section">
+      <div class="dp-section-title">Trạng thái lịch hẹn</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        ${["NEW","CONTACTED","DONE","CANCELLED"].map(s => {
+          const sl = STATUS_LABELS[s]||{label:s};
+          return `<button onclick="changeApptStatus('${id}','${s}')"
+            style="padding:7px 14px;border-radius:7px;border:1.5px solid ${s===st?'var(--blue)':'var(--border)'};background:${s===st?'var(--blue-lt)':'var(--white)'};color:${s===st?'var(--blue)':'var(--slate)'};font-weight:${s===st?700:400};cursor:pointer;font-size:12.5px;font-family:inherit;transition:all 0.15s"
+            id="ast-btn-${s}">${sl.label}</button>`;
+        }).join("")}
+      </div>
+      ${a.handled_by ? `<div style="font-size:12px;color:var(--muted)">Xử lý bởi <strong>${a.handled_by.split("@")[0]}</strong> · ${a.handled_at||""}</div>` : ""}
+    </div>
+
+    <!-- Info -->
+    <div class="dp-section">
+      <div class="dp-section-title">Thông tin khách hàng</div>
+      <div class="dp-grid">
+        <div class="dp-field"><div class="dfl">Họ tên</div><div class="dfv">${a.full_name||"—"}</div></div>
+        <div class="dp-field"><div class="dfl">Điện thoại</div>
+          <div class="dfv">
+            ${ph?`<a href="tel:${ph}" class="phone-link">${ph}</a>
+            <a href="https://zalo.me/${ph.replace(/\D/g,"")}" target="_blank" class="zalo-btn">Z Zalo</a>`:"—"}
+          </div>
+        </div>
+        <div class="dp-field" style="grid-column:1/-1"><div class="dfl">Email</div><div class="dfv">${a.email||"—"}</div></div>
+        <div class="dp-field"><div class="dfl">Loại Visa</div><div class="dfv">${a.visa_type||"—"}</div></div>
+        <div class="dp-field"><div class="dfl">Ngày đặt</div><div class="dfv" style="font-size:12.5px">${dtStr}</div></div>
+        <div class="dp-field"><div class="dfl">Ngày hẹn</div><div class="dfv" style="font-size:12.5px">${prefDate}</div></div>
+        <div class="dp-field"><div class="dfl">Khung giờ</div><div class="dfv">${a.call_time||"—"}</div></div>
+        <div class="dp-field" style="grid-column:1/-1"><div class="dfl">Ghi chú</div><div class="dfv" style="font-size:13px">${a.note||"—"}</div></div>
+        <div class="dp-field" style="grid-column:1/-1"><div class="dfl">Mã lịch hẹn</div><div class="dfv" style="font-family:monospace;letter-spacing:1.5px">${id}</div></div>
+      </div>
+    </div>
+
+    <!-- Bài đánh giá 30 ngày cùng email -->
+    ${buildLinkedSubmissions(a.email, a.linked_submission_id)}
+  `;
+
+
+  document.getElementById("detailActions").innerHTML = `
+    <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 In</button>
+    <a href="tel:${ph}" class="btn btn-primary btn-sm">📞 Gọi ngay</a>
+  `;
+
+  document.getElementById("detailPanel").classList.add("open");
+  document.getElementById("overlay").classList.add("show");
+}
+
+async function changeApptStatus(id, newStatus) {
+  const myId = currentUser.email || currentUser.name;
+  try {
+    const d = await apiFetch(`updateAppointmentStatus&appointment_id=${encodeURIComponent(id)}&status=${newStatus}&handled_by=${encodeURIComponent(myId)}`);
+    if (d.success) {
+      const a = allAppointments.find(x => x.appointment_id === id);
+      if (a) { a.status = newStatus; a.handled_by = myId; a.handled_at = new Date().toLocaleString("vi-VN"); }
+      // Update buttons in panel
+      ["NEW","CONTACTED","DONE","CANCELLED"].forEach(s => {
+        const btn = document.getElementById("ast-btn-"+s);
+        if (!btn) return;
+        btn.style.border = s===newStatus?"1.5px solid var(--blue)":"1.5px solid var(--border)";
+        btn.style.background = s===newStatus?"var(--blue-lt)":"var(--white)";
+        btn.style.color = s===newStatus?"var(--blue)":"var(--slate)";
+        btn.style.fontWeight = s===newStatus?"700":"400";
+      });
+      updateApptStats();
+      applyApptFilters();
+      showToast(`✓ Cập nhật trạng thái: ${newStatus}`, "ok");
+    } else throw new Error(d.error);
+  } catch(e) { if(e.message!=="Unauthorized") showToast("Lỗi: "+e.message,"err"); }
+}
+
+// Init appointment filter dates on load
+(function() {
+  const t = new Date(), f = new Date(t); f.setDate(t.getDate()-30);
+  const fmt3 = d => { const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${day}`; };
+  const afFrom = document.getElementById("af-from");
+  const afTo   = document.getElementById("af-to");
+  if (afFrom) afFrom.value = fmt3(f);
+  if (afTo)   afTo.value   = fmt3(t);
+})();
+
 </script>
 </body>
 </html>
