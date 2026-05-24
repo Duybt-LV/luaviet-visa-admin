@@ -1832,14 +1832,15 @@ function resetApptMobileFilters() {
     btn.classList.toggle("on-amber", k==="contacted" && isOn);
     btn.classList.toggle("on-green",  k==="done"      && isOn);
   });
-  var t   = new Date();
-  var f30 = new Date(t); f30.setDate(t.getDate()-30);
-  var fmt = function(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+  var t    = new Date();
+  var yest = new Date(t); yest.setDate(t.getDate()-1);
+  var nxt7 = new Date(t); nxt7.setDate(t.getDate()+7);
+  var fmt  = function(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
   var mff = document.getElementById("afm-from");
   var mft = document.getElementById("afm-to");
   var mfs = document.getElementById("afm-search");
-  if (mff) mff.value = fmt(f30);
-  if (mft) mft.value = fmt(t);
+  if (mff) mff.value = fmt(yest);
+  if (mft) mft.value = fmt(nxt7);
   if (mfs) mfs.value = "";
   syncApptMobileFilter();
   // Also call desktop reset to sync state
@@ -2043,10 +2044,13 @@ function resetApptFilters() {
   ["new","contacted"].forEach(k => document.getElementById("aft-"+k).classList.add("active"));
   ["done","cancelled"].forEach(k => document.getElementById("aft-"+k).classList.remove("active"));
   document.getElementById("af-search").value = "";
-  const t = new Date(), f = new Date(t); f.setDate(t.getDate()-30);
+  // Mặc định: hôm nay → +60 ngày (xem lịch hẹn sắp tới)
   const fmt2 = d => { const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${day}`; };
-  document.getElementById("af-from").value = fmt2(f);
-  document.getElementById("af-to").value   = fmt2(t);
+  const t = new Date();
+  const yest = new Date(t); yest.setDate(t.getDate()-1);
+  const nxt7 = new Date(t); nxt7.setDate(t.getDate()+7);
+  document.getElementById("af-from").value = fmt2(yest);
+  document.getElementById("af-to").value   = fmt2(nxt7);
   apptPage = 1; applyApptFilters();
 }
 
@@ -2061,11 +2065,14 @@ function applyApptFilters() {
     if (!apptFState.done      && st==="DONE")       return false;
     if (!apptFState.cancelled && st==="CANCELLED")  return false;
     if (from || to) {
-      const d = excelDate(a.submitted_at);
-      if (d) {
-        const iso = localDateStr(d);
-        if (from && iso < from) return false;
-        if (to   && iso > to)   return false;
+      // Lọc theo NGÀY HẸN (preferred_date), không phải ngày tạo
+      const pd = a.preferred_date ? String(a.preferred_date).split('T')[0] : null;
+      if (pd) {
+        if (from && pd < from) return false;
+        if (to   && pd > to)   return false;
+      } else {
+        // Nếu không có ngày hẹn thì ẩn khỏi bộ lọc ngày
+        if (from || to) return false;
       }
     }
     if (srch) {
@@ -2110,7 +2117,8 @@ function renderApptTable(appts) {
       <td><span style="font-size:13px">${flag?VISA_FLAGS[flag]:""}</span> ${a.visa_type||"—"}</td>
       <td><div style="font-size:12.5px;font-weight:600">${prefDate}</div><div style="font-size:11.5px;color:var(--muted)">${a.call_time||""}</div></td>
       <td><span class="badge ${sl.cls==='badge-new'?'':sl.cls}" style="${sl.cls==='badge-new'?'background:var(--blue-lt);color:var(--blue)':''}">${sl.label}</span></td>
-    </tr>`;
+    
+      <td style="font-size:11.5px;color:var(--muted)">${a.handled_by ? '<span title="'+a.handled_at+'">'+a.handled_by.split('@')[0]+'</span>' : '—'}</td></tr>`;
   });
 
   document.getElementById("apptTableContainer").innerHTML = `
@@ -2118,7 +2126,7 @@ function renderApptTable(appts) {
       <table class="leads-table">
         <thead><tr>
           <th>Ngày đặt</th><th>Khách hàng</th><th>Điện thoại</th>
-          <th>Loại Visa</th><th>Lịch hẹn</th><th>Trạng thái</th>
+          <th>Loại Visa</th><th>Lịch hẹn</th><th>Trạng thái</th><th>Xử lý bởi</th>
         </tr></thead>
         <tbody>${rows.join("")}</tbody>
       </table>
@@ -2286,12 +2294,14 @@ async function changeApptStatus(id, newStatus) {
 
 // Init appointment filter dates on load
 (function() {
-  const t = new Date(), f = new Date(t); f.setDate(t.getDate()-30);
   const fmt3 = d => { const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${day}`; };
+  const t3   = new Date();
+  const yest3 = new Date(t3); yest3.setDate(t3.getDate()-1);
+  const nxt73 = new Date(t3); nxt73.setDate(t3.getDate()+7);
   const afFrom = document.getElementById("af-from");
   const afTo   = document.getElementById("af-to");
-  if (afFrom) afFrom.value = fmt3(f);
-  if (afTo)   afTo.value   = fmt3(t);
+  if (afFrom) afFrom.value = fmt3(yest3);
+  if (afTo)   afTo.value   = fmt3(nxt73);
 })();
 
 
@@ -2346,6 +2356,13 @@ function renderApptCards(appts) {
     const stColor  = st==="NEW"?"var(--blue)":st==="CONTACTED"?"var(--amber)":st==="DONE"?"var(--green)":"var(--muted)";
     const stBg     = st==="NEW"?"var(--blue-lt)":st==="CONTACTED"?"var(--amber-bg)":st==="DONE"?"var(--green-bg)":"var(--bg)";
 
+    var handledLine = (a.handled_by && norm2(a.status) !== "NEW")
+      ? '<div style="font-size:11px;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:4px">'
+        + '✓ <span style="color:var(--slate)">' + a.handled_by.split("@")[0] + '</span>'
+        + (a.handled_at ? ' · ' + a.handled_at : '')
+        + '</div>'
+      : "";
+
     return '<div class="appt-card" onclick="openApptDetail(\'' + a.appointment_id + '\')">'
       + '<div class="appt-card-row1">'
         + '<div>'
@@ -2364,6 +2381,7 @@ function renderApptCards(appts) {
           + '<a href="' + zaloHref + '" target="_blank" class="zalo-btn" style="font-size:12px;padding:4px 10px">Z Zalo</a>'
           : '<span style="font-size:12px;color:var(--muted)">Không có SĐT</span>')
       + '</div>'
+      + handledLine
     + '</div>';
   }).join("");
 }
