@@ -1362,8 +1362,8 @@ function openDetail(id) {
   const caredInfo = isCared(l) && l.cared_by
     ? `<div class="cared-by-info">✓ Chăm sóc bởi <strong>${caredByDisplay}</strong>${l.cared_at?" · "+l.cared_at:""}</div>` : "";
 
-  // Tính điểm thành phần từ answers
-  const groupBarsHtml = buildGroupBars(answers);
+  // Tính điểm thành phần từ answers + group_scores_json (chính xác)
+  const groupBarsHtml = buildGroupBars(answers, l.group_scores_json);
 
   document.getElementById("detailBody").innerHTML = `
     <!-- Score + Group bars -->
@@ -1381,7 +1381,7 @@ function openDetail(id) {
           ${validTag}${hardNote}
         </div>
       </div>
-      ${groupBarsHtml ? `<div style="border-top:1px solid var(--border);padding-top:12px">${groupBarsHtml}</div>` : ""}
+      ${groupBarsHtml ? `<div id="dp-gbars-${id}" style="border-top:1px solid var(--border);padding-top:12px"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Điểm thành phần</div>${groupBarsHtml}</div>` : `<div id="dp-gbars-${id}"></div>`}
     </div>
 
     <!-- Info -->
@@ -1435,6 +1435,9 @@ function openDetail(id) {
 
   document.getElementById("detailPanel").classList.add("open");
   document.getElementById("overlay").classList.add("show");
+  // Luôn gọi server tính lại ngầm để bắt trường hợp bộ câu hỏi đã thay đổi
+  // sau ngày khách submit. recalcAndUpdateBars sẽ tự cập nhật bars.
+  recalcAndUpdateBars(l);
 }
 
 function closeDetail() {
@@ -1573,7 +1576,7 @@ async function doLookup() {
         ${(() => {
           // Group bars
           const lkAnswers = Array.isArray(r.answers_json) ? r.answers_json : (() => { try{return JSON.parse(r.answers_json||"[]")}catch(e){return []} })();
-          const gbHtml = buildGroupBars(lkAnswers);
+          const gbHtml = buildGroupBars(lkAnswers, l.group_scores_json);
           let lkQaHtml = "";
           [...GROUP_ORDER,"PURPOSE"].forEach(grp => {
             const qs = lkAnswers.filter(a=>a.group===grp);
@@ -1589,7 +1592,7 @@ async function doLookup() {
           });
           if (!gbHtml && !lkQaHtml) return "";
           return `<div style="border-top:1px solid var(--border);padding:14px 18px">
-            ${gbHtml ? `<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Điểm thành phần</div>${gbHtml}</div>` : ""}
+            ${gbHtml ? `<div id="dp-gbars-${l.submission_id}" style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Điểm thành phần</div>${gbHtml}</div>` : `<div id="dp-gbars-${r.submission_id}" style="margin-bottom:14px"></div>`}
             ${lkQaHtml ? `<div><div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Chi tiết câu trả lời</div>${lkQaHtml}</div>` : ""}
           </div>`;
         })()}
@@ -1624,29 +1627,85 @@ async function markRedeemed(id) {
 }
 
 // ══════════════════════════════════════════════════════
-// COMPUTE GROUP DISPLAY từ answers (không cần weights)
-// Dùng tỉ lệ số câu để hiển thị thanh tiến trình
+// recalcAndUpdateBars – gọi server tính lại group scores
+// và cập nhật bars mà không cần reload toàn bộ detail
 // ══════════════════════════════════════════════════════
-function buildGroupBars(answers) {
-  // Đếm số câu mỗi nhóm để làm thanh progress
-  const counts = {};
-  GROUP_ORDER.forEach(g => counts[g] = {total:0, answered:0});
-  answers.forEach(a => {
-    if (a.group === "PURPOSE") return;
-    const g = a.group;
-    if (!counts[g]) counts[g] = {total:0, answered:0};
-    counts[g].total++;
-    // Coi là "answered well" nếu câu trả lời không phải Không/Chưa/Thấp nhất
-    const ans = Array.isArray(a.answer) ? a.answer.join(",") : String(a.answer||"");
-    const isWeak = /^(Không|Chưa|Nội trợ|Thất nghiệp|Dưới|Không có|Công việc tự do)/i.test(ans);
-    if (!isWeak) counts[g].answered++;
-  });
-  let html = '';
+async function recalcAndUpdateBars(lead) {
+  try {
+    const d = await apiFetch("recalcGroupScores&submission_id=" + encodeURIComponent(lead.submission_id));
+    if (!d.success || !d.group_scores_json) return;
+
+    // Cập nhật cache lead
+    lead.group_scores_json = d.group_scores_json;
+    const gs = JSON.parse(d.group_scores_json);
+
+    // Rebuild bars HTML
+    const barsEl = document.getElementById("dp-gbars-" + lead.submission_id);
+    if (!barsEl) return;
+
+    const lkAnswers = Array.isArray(lead.answers_json) ? lead.answers_json
+      : (() => { try{ return JSON.parse(lead.answers_json||"[]"); } catch(e){ return []; } })();
+
+    const newHtml = buildGroupBars(lkAnswers, d.group_scores_json);
+    barsEl.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Điểm thành phần</div>' + newHtml;
+  } catch(e) {
+    // Silent fail – không hiện lỗi cho người dùng
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// COMPUTE GROUP DISPLAY
+// Ưu tiên dùng group_scores_json từ sheet (chính xác).
+// Fallback: đếm câu trả lời (ước tính) nếu chưa có dữ liệu.
+// ══════════════════════════════════════════════════════
+function buildGroupBars(answers, groupScoresRaw) {
+  // Parse groupScores nếu có
+  let groupScores = null;
+  if (groupScoresRaw) {
+    try {
+      groupScores = typeof groupScoresRaw === "string"
+        ? JSON.parse(groupScoresRaw) : groupScoresRaw;
+    } catch(e) { groupScores = null; }
+  }
+
+  // Map từ tên nhóm trong groupScores về GROUP_ORDER keys
+  // groupScores có thể dùng key: GT/NV/TC/TS/LS hoặc TRAVEL/EMPLOYMENT/...
+  const KEY_MAP = {
+    GT:"TRAVEL", NV:"EMPLOYMENT", TC:"FINANCE", TS:"ASSET", LS:"HISTORY",
+    TRAVEL:"TRAVEL", EMPLOYMENT:"EMPLOYMENT", FINANCE:"FINANCE", ASSET:"ASSET", HISTORY:"HISTORY"
+  };
+
+  let html = "";
   GROUP_ORDER.forEach(g => {
-    const c = counts[g];
-    if (!c || c.total === 0) return;
-    const pct = Math.round((c.answered / c.total) * 100);
-    const color = pct >= 70 ? 'var(--green)' : pct >= 45 ? '#D97706' : 'var(--red)';
+    let pct = null;
+    let hardFail = false;
+
+    if (groupScores) {
+      // Tìm trong groupScores bằng cả 2 key format
+      const shortKey = {TRAVEL:"GT",EMPLOYMENT:"NV",FINANCE:"TC",ASSET:"TS",HISTORY:"LS"}[g];
+      const gs = groupScores[g] || groupScores[shortKey];
+      if (gs && gs.max > 0) {
+        pct = Math.round((gs.score / gs.max) * 100);
+        hardFail = !!gs.hardFail;
+      }
+    }
+
+    // Fallback: đếm câu trả lời không yếu
+    if (pct === null) {
+      const qs = answers.filter(a => a.group === g);
+      if (!qs.length) return;
+      let good = 0;
+      qs.forEach(a => {
+        const ans = Array.isArray(a.answer) ? a.answer.join(",") : String(a.answer||"");
+        if (!/^(Không|Chưa|Nội trợ|Thất nghiệp|Dưới|Không có|Công việc tự do)/i.test(ans)) good++;
+      });
+      pct = Math.round((good / qs.length) * 100);
+    }
+
+    const color = hardFail ? "var(--red)"
+                : pct >= 70 ? "var(--green)"
+                : pct >= 45 ? "#D97706"
+                : "var(--red)";
     const lbl = GROUP_LABELS[g] || g;
     html += `<div style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;margin-bottom:4px">
@@ -2280,6 +2339,8 @@ function openApptDetail(id) {
   document.getElementById("detailPanel").classList.add("open");
   document.getElementById("overlay").classList.add("show");
   if (typeof syncFabAfterOpen === "function") syncFabAfterOpen(id);
+  // Nếu chưa có group_scores_json, gọi server tính lại ngầm
+  if (!l.group_scores_json) recalcAndUpdateBars(l);
 }
 
 async function changeApptStatus(id, newStatus) {
